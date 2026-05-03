@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VoteWise | Your Complete Election Guide</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <i data-lucide="box-select" class="logo-icon"></i> VoteWise
+            </a>
+            
+            <input type="checkbox" id="nav-toggle" class="nav-toggle">
+            <label for="nav-toggle" class="nav-toggle-label">
+                <span></span>
+            </label>
+            
+            <ul class="nav-links">
+                <li><a href="#hero">Home</a></li>
+                <li><a href="#timeline-section">Timeline</a></li>
+                <li><a href="#how-to-vote">How to Vote</a></li>
+                <li><a href="#faq">FAQ</a></li>
+                <li><a href="#glossary">Glossary</a></li>
+                <li><a href="#chat-panel" onclick="document.getElementById('chat-toggle').click(); return false;">Chat</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero">
+        <div class="hero-bg-lines"></div>
+        <div class="hero-content fade-up">
+            <div class="hero-icon-container">
+                <i data-lucide="archive" class="floating-box"></i>
+            </div>
+            <h1>Understand Every Vote. Every Step.</h1>
+            <p>Your complete interactive guide to the democratic election process</p>
+            
+            <div class="hero-buttons">
+                <a href="#timeline-section" class="btn btn-primary">Explore the Process</a>
+                <button class="btn btn-secondary" onclick="document.getElementById('chat-toggle').click()">Ask VoteWise AI</button>
+            </div>
+            
+            <div class="country-selector">
+                <span class="pill active" data-country="india">India</span>
+                <span class="pill" data-country="usa">USA</span>
+                <span class="pill" data-country="uk">UK</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Election Timeline -->
+    <section id="timeline-section" class="section">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2>Election Timeline</h2>
+                <p>Follow the step-by-step journey of an election from announcement to swearing-in.</p>
+                <div class="timeline-controls">
+                    <button class="timeline-btn active" data-country="india">India</button>
+                    <button class="timeline-btn" data-country="usa">USA</button>
+                    <button class="timeline-btn" data-country="uk">UK</button>
+                    <button class="timeline-btn" data-country="generic">Generic</button>
+                </div>
+            </div>
+            
+            <div class="timeline-header fade-up" id="timeline-header">
+                <!-- Dynamically populated body name -->
+            </div>
+            
+            <div class="timeline-container fade-up" id="timeline">
+                <!-- Dynamically populated steps -->
+            </div>
+        </div>
+    </section>
+
+    <!-- How To Vote -->
+    <section id="how-to-vote" class="section bg-light">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2>How to Vote</h2>
+                <p>Your step-by-step guide to exercising your democratic right.</p>
+            </div>
+            
+            <div class="grid cards-grid fade-up">
+                <!-- Card 1 -->
+                <div class="card vote-step">
+                    <div class="step-icon">✅</div>
+                    <div class="step-number">Step 1</div>
+                    <h3>Check Your Eligibility</h3>
+                    <p>Age 18+, citizenship, mental capacity, not disenfranchised.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Check eligibility early as requirements vary by state/country.
+                    </div>
+                </div>
+                <!-- Card 2 -->
+                <div class="card vote-step">
+                    <div class="step-icon">📋</div>
+                    <div class="step-number">Step 2</div>
+                    <h3>Register to Vote</h3>
+                    <p>Gather documents needed, check deadlines, complete online vs offline registration.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Keep your registration receipt safe!
+                    </div>
+                </div>
+                <!-- Card 3 -->
+                <div class="card vote-step">
+                    <div class="step-icon">📍</div>
+                    <div class="step-number">Step 3</div>
+                    <h3>Find Your Polling Booth</h3>
+                    <p>Using voter slip, official apps (like ECI app in India), or official websites.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Verify your booth location a day before voting.
+                    </div>
+                </div>
+                <!-- Card 4 -->
+                <div class="card vote-step">
+                    <div class="step-icon">🧑‍💼</div>
+                    <div class="step-number">Step 4</div>
+                    <h3>Know Your Candidates</h3>
+                    <p>Research backgrounds, criminal records, and study party manifestos.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Look for Form 26 (India) for detailed candidate info.
+                    </div>
+                </div>
+                <!-- Card 5 -->
+                <div class="card vote-step">
+                    <div class="step-icon">🗳️</div>
+                    <div class="step-number">Step 5</div>
+                    <h3>Cast Your Vote</h3>
+                    <p>Step inside booth, press EVM button or mark ballot, check VVPAT slip if applicable.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Your vote is secret. No one can force you to reveal it.
+                    </div>
+                </div>
+                <!-- Card 6 -->
+                <div class="card vote-step">
+                    <div class="step-icon">📡</div>
+                    <div class="step-number">Step 6</div>
+                    <h3>Track Results</h3>
+                    <p>Follow official results websites and avoid early exit poll speculation.</p>
+                    <div class="pro-tip">
+                        <strong>Pro Tip:</strong> Official results are the only ones that matter!
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="section">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2>Frequently Asked Questions</h2>
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="faq-search" placeholder="Search questions...">
+                </div>
+            </div>
+            
+            <div class="faq-list fade-up" id="faq-container">
+                <!-- Dynamically populated FAQs -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Glossary -->
+    <section id="glossary" class="section bg-light">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2>Election Glossary</h2>
+                <div class="search-box">
+                    <i data-lucide="search"></i>
+                    <input type="text" id="glossary-search" placeholder="Search terms...">
+                </div>
+            </div>
+            
+            <div class="grid glossary-grid fade-up" id="glossary-container">
+                <!-- Dynamically populated glossary terms -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Election Bodies Info -->
+    <section id="bodies" class="section">
+        <div class="container">
+            <div class="section-header fade-up">
+                <h2>Key Electoral Bodies</h2>
+            </div>
+            
+            <div class="grid bodies-grid fade-up">
+                <div class="card body-card navy-card">
+                    <div class="body-header">
+                        <h3>Election Commission of India</h3>
+                        <span class="flag">🇮🇳</span>
+                    </div>
+                    <p class="est">Est. 1950</p>
+                    <ul>
+                        <li>Conducts free & fair elections</li>
+                        <li>Registers political parties</li>
+                        <li>Enforces Model Code of Conduct</li>
+                    </ul>
+                    <a href="https://eci.gov.in/" target="_blank" class="body-link">Official Website <i data-lucide="external-link" class="icon-sm"></i></a>
+                </div>
+                
+                <div class="card body-card navy-card">
+                    <div class="body-header">
+                        <h3>Federal Election Commission</h3>
+                        <span class="flag">🇺🇸</span>
+                    </div>
+                    <p class="est">Est. 1974</p>
+                    <ul>
+                        <li>Administers campaign finance laws</li>
+                        <li>Discloses campaign finance data</li>
+                        <li>Enforces contribution limits</li>
+                    </ul>
+                    <a href="https://www.fec.gov/" target="_blank" class="body-link">Official Website <i data-lucide="external-link" class="icon-sm"></i></a>
+                </div>
+                
+                <div class="card body-card navy-card">
+                    <div class="body-header">
+                        <h3>Electoral Commission</h3>
+                        <span class="flag">🇬🇧</span>
+                    </div>
+                    <p class="est">Est. 2001</p>
+                    <ul>
+                        <li>Oversees elections and referendums</li>
+                        <li>Regulates political finance</li>
+                        <li>Registers political parties</li>
+                    </ul>
+                    <a href="https://www.electoralcommission.org.uk/" target="_blank" class="body-link">Official Website <i data-lucide="external-link" class="icon-sm"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-col">
+                    <a href="#" class="logo footer-logo">
+                        <i data-lucide="box-select" class="logo-icon"></i> VoteWise
+                    </a>
+                    <p>Empowering Informed Voters</p>
+                </div>
+                <div class="footer-col">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#timeline-section">Timeline</a></li>
+                        <li><a href="#how-to-vote">How to Vote</a></li>
+                        <li><a href="#faq">FAQ</a></li>
+                        <li><a href="#glossary">Glossary</a></li>
+                    </ul>
+                </div>
+                <div class="footer-col">
+                    <h4>Disclaimer</h4>
+                    <p class="disclaimer">This is an educational tool only. For official information, visit your national election commission website.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>Built for civic education. Not affiliated with any political party.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- AI Chat Panel -->
+    <div class="chat-wrapper">
+        <input type="checkbox" id="chat-toggle" class="chat-toggle">
+        <label for="chat-toggle" class="chat-btn">
+            <span class="chat-icon">💬</span> Ask VoteWise
+        </label>
+        
+        <div class="chat-panel" id="chat-panel">
+            <div class="chat-header">
+                <h3>🗳️ VoteWise AI</h3>
+                <div class="chat-header-actions">
+                    <button id="clear-chat-btn" title="Clear chat"><i data-lucide="trash-2"></i></button>
+                    <label for="chat-toggle" class="close-btn"><i data-lucide="x"></i></label>
+                </div>
+            </div>
+            
+            <div class="chat-interface" id="chat-interface">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Messages will appear here -->
+                    <div class="message ai">
+                        Hello! I'm VoteWise AI. How can I help you understand the election process today?
+                    </div>
+                </div>
+                
+                <div class="chat-suggestions" id="chat-suggestions">
+                    <button class="chip">How do I register to vote in India?</button>
+                    <button class="chip">What happens on polling day?</button>
+                    <button class="chip">What is NOTA?</button>
+                    <button class="chip">How are votes counted?</button>
+                </div>
+                
+                <div class="chat-input-area">
+                    <input type="text" id="chat-input" placeholder="Ask a question..." autocomplete="off">
+                    <button id="send-msg-btn"><i data-lucide="send"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
