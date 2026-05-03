@@ -1,5 +1,4 @@
 // data.js
-
 const electionData = {
   india: {
     name: "India 🇮🇳",
