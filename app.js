@@ -1,232 +1,540 @@
-// app.js
+// app.js — VoteWise | Performance-Optimized Edition
+'use strict';
 
-document.addEventListener('DOMContentLoaded', () => {
-    const observerOptions = { threshold: 0.1, rootMargin: "0px 0px -50px 0px" };
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) { entry.target.classList.add('visible'); observer.unobserve(entry.target); }
-        });
-    }, observerOptions);
-    document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+// ─── Performance Budget Tracking ─────────────────────────────────────────────
+performance.mark('votewise-init-start');
 
-    const timelineContainer = document.getElementById('timeline');
-    const timelineHeader = document.getElementById('timeline-header');
-    const timelineBtns = document.querySelectorAll('.timeline-btn');
-    const heroPills = document.querySelectorAll('.country-selector .pill');
-
-    function renderTimeline(countryKey) {
-        const data = electionData[countryKey];
-        if (!data) return;
-        timelineHeader.innerHTML = `<h3><i data-lucide="building" class="icon-sm"></i> Official Body: ${data.body}</h3>`;
-        lucide.createIcons();
-        timelineContainer.innerHTML = '';
-        data.steps.forEach(step => {
-            const stepEl = document.createElement('div');
-            stepEl.className = 'timeline-step';
-            const badgeClass = step.phase === 'Pre-Election' ? 'badge-warning' : step.phase === 'Election Day' ? 'badge-primary' : 'badge-success';
-            stepEl.innerHTML = `
-                <div class="timeline-marker">${step.id}</div>
-                <div class="timeline-content">
-                    <div class="timeline-content-header">
-                        <h4>${step.icon} ${step.title}</h4>
-                        <span class="badge ${badgeClass}">${step.phase}</span>
-                    </div>
-                    <p class="timeline-duration"><i data-lucide="clock" class="icon-sm"></i> ${step.duration}</p>
-                    <div class="timeline-details">
-                        <div class="detail-box citizen"><strong><i data-lucide="user" class="icon-sm"></i> Citizen Action:</strong><p>${step.citizen}</p></div>
-                        <div class="detail-box official"><strong><i data-lucide="building-2" class="icon-sm"></i> Official Action:</strong><p>${step.official}</p></div>
-                    </div>
-                </div>`;
-            stepEl.querySelector('.timeline-content-header').addEventListener('click', () => {
-                stepEl.querySelector('.timeline-details').classList.toggle('expanded');
-            });
-            timelineContainer.appendChild(stepEl);
-        });
-        lucide.createIcons();
-    }
-
-    function switchCountry(countryKey) {
-        renderTimeline(countryKey);
-        timelineBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.country === countryKey));
-        heroPills.forEach(pill => pill.classList.toggle('active', pill.dataset.country === countryKey));
-    }
-
-    timelineBtns.forEach(btn => btn.addEventListener('click', (e) => switchCountry(e.target.dataset.country)));
-    heroPills.forEach(pill => pill.addEventListener('click', (e) => switchCountry(e.target.dataset.country)));
-    switchCountry('india');
-
-    const faqContainer = document.getElementById('faq-container');
-    const faqSearch = document.getElementById('faq-search');
-
-    function renderFAQs(searchTerm = "") {
-        faqContainer.innerHTML = '';
-        const filteredFaqs = faqData.filter(faq =>
-            faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (filteredFaqs.length === 0) { faqContainer.innerHTML = '<p class="no-results">No questions found.</p>'; return; }
-        filteredFaqs.forEach((faq) => {
-            const faqItem = document.createElement('div');
-            faqItem.className = 'faq-item';
-            faqItem.innerHTML = `
-                <div class="faq-question"><h3>${faq.question}</h3><i data-lucide="chevron-down" class="faq-icon"></i></div>
-                <div class="faq-answer"><p>${faq.answer}</p></div>`;
-            faqItem.querySelector('.faq-question').addEventListener('click', () => {
-                const answer = faqItem.querySelector('.faq-answer');
-                const isOpen = answer.style.maxHeight;
-                document.querySelectorAll('.faq-answer').forEach(el => el.style.maxHeight = null);
-                document.querySelectorAll('.faq-item').forEach(el => el.classList.remove('active'));
-                if (!isOpen) { answer.style.maxHeight = answer.scrollHeight + "px"; faqItem.classList.add('active'); }
-            });
-            faqContainer.appendChild(faqItem);
-        });
-        lucide.createIcons();
-    }
-
-    faqSearch.addEventListener('input', (e) => renderFAQs(e.target.value));
-    renderFAQs();
-
-    const glossaryContainer = document.getElementById('glossary-container');
-    const glossarySearch = document.getElementById('glossary-search');
-
-    function renderGlossary(searchTerm = "") {
-        glossaryContainer.innerHTML = '';
-        const filteredTerms = glossaryData.filter(item =>
-            item.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            item.definition.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        if (filteredTerms.length === 0) { glossaryContainer.innerHTML = '<p class="no-results">No terms found.</p>'; return; }
-        filteredTerms.forEach(item => {
-            const card = document.createElement('div');
-            card.className = 'card glossary-card';
-            card.innerHTML = `<h3>${item.term}</h3><p>${item.definition}</p>`;
-            glossaryContainer.appendChild(card);
-        });
-    }
-
-    glossarySearch.addEventListener('input', (e) => renderGlossary(e.target.value));
-    renderGlossary();
-
-    // Chat
-    let conversationHistory = [];
-    const chatMessages = document.getElementById('chat-messages');
-    const chatInput = document.getElementById('chat-input');
-    const sendMsgBtn = document.getElementById('send-msg-btn');
-    const chatSuggestions = document.getElementById('chat-suggestions');
-
-    document.getElementById('clear-chat-btn').addEventListener('click', () => {
-        chatMessages.innerHTML = '<div class="message ai">Hello! I\'m VoteWise AI. How can I help you understand the election process today?</div>';
-        conversationHistory = [];
-        chatSuggestions.style.display = 'flex';
-    });
-
-    function renderMarkdown(text) {
-        return text
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/^- (.+)/gm, '<li>$1</li>')
-            .replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>')
-            .replace(/\n\n/g, '<br><br>')
-            .replace(/\n/g, '<br>');
-    }
-
-    function addMessage(text, isUser = false) {
-        const msgDiv = document.createElement('div');
-        msgDiv.className = `message ${isUser ? 'user' : 'ai'}`;
-        if (isUser) { msgDiv.textContent = text; } else { msgDiv.innerHTML = renderMarkdown(text); }
-        chatMessages.appendChild(msgDiv);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function addTypingIndicator() {
-        const indicator = document.createElement('div');
-        indicator.className = 'message ai typing';
-        indicator.id = 'typing-indicator';
-        indicator.innerHTML = '<div class="dot"></div><div class="dot"></div><div class="dot"></div>';
-        chatMessages.appendChild(indicator);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function removeTypingIndicator() {
-        const indicator = document.getElementById('typing-indicator');
-        if (indicator) indicator.remove();
-    }
-
-    async function sendMessage(userMessage) {
-        addMessage(userMessage, true);
-        chatInput.value = '';
-        chatSuggestions.style.display = 'none';
-        conversationHistory.push({ role: "user", content: userMessage });
-        addTypingIndicator();
-
-        setTimeout(() => {
-            removeTypingIndicator();
-            const m = userMessage.toLowerCase();
-            let reply = "I'm VoteWise AI. I can guide you through the election process! Try asking about registration, eligibility, polling day, NOTA, EVM, counting, or the Model Code of Conduct.";
-
-            if (m.includes("eligib") || m.includes("who can vote") || m.includes("qualify") || m.includes("age limit") || m.includes("18")) {
-                reply = "**Voter Eligibility in India:**\n- Must be **18 years or older** (as of Jan 1 of the revision year)\n- Must be an **Indian citizen**\n- Must be a **resident** of your polling area\n- Must not be disqualified by any law\n\n💡 NRIs can also register at their last Indian address.";
-            } else if (m.includes("register") || m.includes("registration") || m.includes("voter id") || m.includes("enroll") || m.includes("form 6") || m.includes("sign up")) {
-                reply = "**How to Register as a Voter in India:**\n1. Visit **voters.eci.gov.in** or the **Voter Helpline App**\n2. Fill **Form 6** online or offline\n3. Documents: Aadhaar, address proof, passport photo\n4. After verification → name added to Electoral Roll → EPIC card issued\n\n📞 Helpline: **1950**";
-            } else if (m.includes("nota") || m.includes("none of the above") || m.includes("reject all")) {
-                reply = "**What is NOTA?**\nNOTA = **None Of The Above** (introduced in 2013 by Supreme Court).\n- Last button on the EVM\n- Lets you reject all candidates without abstaining\n- Even if NOTA wins most votes, the candidate with highest votes still wins\n- But it signals voter dissatisfaction to parties 🗳️";
-            } else if (m.includes("polling day") || m.includes("election day") || m.includes("voting day") || m.includes("how to vote") || m.includes("cast vote") || m.includes("booth") || m.includes("happen")) {
-                reply = "**On Polling Day in India (7 AM – 6 PM):**\n1. Carry your **Voter ID or approved alternate ID**\n2. Go to your **assigned polling booth**\n3. Identity verified → **indelible ink** on finger\n4. Press **EVM button** next to your candidate\n5. **VVPAT slip** confirms your vote for 7 seconds\n\n🔒 Your vote is completely **secret and anonymous**.";
-            } else if (m.includes("evm") || m.includes("electronic voting") || m.includes("tamper") || m.includes("hacking") || m.includes("voting machine")) {
-                reply = "**About EVMs:**\n- ✅ NOT connected to internet — remote hacking impossible\n- ✅ Undergoes mock polls before election day\n- ✅ Sealed in presence of party representatives\n- ✅ Results cross-verified with VVPAT slips\n- ✅ Stored in strong rooms under CCTV + paramilitary guard";
-            } else if (m.includes("vvpat") || m.includes("paper slip") || m.includes("paper trail") || m.includes("verify vote")) {
-                reply = "**What is VVPAT?**\nVVPAT = **Voter Verifiable Paper Audit Trail**\n- After pressing EVM, a paper slip prints\n- Shows candidate name, symbol, serial number\n- Visible for **7 seconds** through transparent window\n- Slip drops into sealed box for audit purposes\n\n✅ Ensures your vote was recorded correctly.";
-            } else if (m.includes("document") || m.includes("id proof") || m.includes("aadhaar") || m.includes("pan card") || m.includes("without voter id") || m.includes("alternate id")) {
-                reply = "**Accepted IDs at Indian Polling Booths:**\n1. Voter ID (EPIC)\n2. Aadhaar Card\n3. PAN Card\n4. Passport\n5. Driving License\n6. MGNREGA Job Card\n7. Pension document with photo\n8. Bank passbook with photo\n\n📌 Name **must be on the voter list** regardless of ID.";
-            } else if (m.includes("count") || m.includes("result") || m.includes("declare") || m.includes("who wins")) {
-                reply = "**How Votes are Counted in India:**\n1. Counting centre set up under **CCTV surveillance**\n2. **Candidate agents** present at all times\n3. EVMs opened → **round-by-round tallies** announced\n4. VVPAT slips from random booths cross-verified\n5. **Returning Officer declares the winner**\n\n📊 Live results: **results.eci.gov.in**";
-            } else if (m.includes("model code") || m.includes("mcc") || m.includes("code of conduct") || m.includes("campaign rules")) {
-                reply = "**Model Code of Conduct (MCC):**\nIssued by ECI when elections are announced.\n- Ruling party cannot announce **new schemes** using govt resources\n- No **hate speech** or religion/caste appeals\n- No **voter bribery** allowed\n\n🔔 Report violations via **cVIGIL App**";
-            } else if (m.includes("constituency") || m.includes("delimitation") || m.includes("my area") || m.includes("mp seat")) {
-                reply = "**What is a Constituency?**\nA geographical area that elects **one representative**.\n- Lok Sabha → **543 constituencies** across India\n- Boundaries drawn by **Delimitation Commission** after Census\n\n🗺️ Find yours: **electoralsearch.eci.gov.in**";
-            } else if (m.includes("moved") || m.includes("new city") || m.includes("shifted") || m.includes("transfer") || m.includes("change address")) {
-                reply = "**Moved to a New City?**\n- Submit **Form 8A** (within same constituency)\n- Or **Form 6** (new constituency)\n- File with Electoral Registration Officer of new area\n\n⏱️ Act early — updates take time before elections!";
-            } else if (m.includes("missing") || m.includes("name not") || m.includes("not in list") || m.includes("not found")) {
-                reply = "**Name Missing from Voter List?**\n1. Check at **voters.eci.gov.in**\n2. Apply via **Form 6** (new registration)\n3. Act early — updates take time\n4. Cannot vote if name isn't listed on polling day\n\n📞 Call **1950** | Visit local Electoral Registration Officer";
-            } else if (m.includes("by-election") || m.includes("bypoll") || m.includes("by poll") || m.includes("byelection")) {
-                reply = "**What is a By-Election?**\nAn election to fill a **single vacant seat** between general elections.\n- Caused by: death, resignation, or disqualification of sitting member\n- Follows the same process as a general election";
-            } else if (m.includes("silent") || m.includes("48 hour") || m.includes("blackout") || m.includes("no campaign")) {
-                reply = "**Silent Period:**\nBegins **48 hours before** polling starts.\n- No campaigning of any kind allowed\n- Media blackout on campaign coverage\n- No rallies, speeches, or political ads\n\n🔇 Gives voters time for quiet reflection.";
-            } else if (m.includes("eci") || m.includes("election commission") || m.includes("who conducts")) {
-                reply = "**Election Commission of India (ECI):**\n- Established in **1950** under Article 324\n- Autonomous constitutional authority\n- Conducts Lok Sabha, Rajya Sabha & State elections\n- Enforces Model Code of Conduct\n- Manages EVMs and voter rolls\n\n🌐 **eci.gov.in**";
-            } else if (m.includes("lok sabha") || m.includes("parliament") || m.includes("lower house")) {
-                reply = "**Lok Sabha (House of the People):**\n- Lower house of India's Parliament\n- **543 elected seats**\n- Members elected for **5-year terms** by direct vote\n- Winning party/coalition forms the **government**\n- PM is leader of majority party";
-            } else if (m.includes("rajya sabha") || m.includes("upper house") || m.includes("council of states")) {
-                reply = "**Rajya Sabha (Council of States):**\n- Upper house of India's Parliament\n- **245 seats** total\n- Members chosen by state legislative assemblies\n- Members serve **6-year terms**\n- Cannot be dissolved unlike Lok Sabha";
-            } else if (m.includes("exit poll") || m.includes("opinion poll") || m.includes("survey") || m.includes("prediction")) {
-                reply = "**Exit Polls vs Opinion Polls:**\n- **Exit Poll:** Survey after voters leave booth — predicts results\n- **Opinion Poll:** Survey before election — gauges preference\n\n⚠️ Exit polls banned in India until **last polling phase closes**\n📌 Only ECI official results are final.";
-            } else if (m.includes("hung") || m.includes("coalition") || m.includes("no majority")) {
-                reply = "**Hung Parliament / Assembly:**\nNo single party wins majority of seats.\n- Parties negotiate to form a **coalition government**\n- President/Governor invites largest party to form govt\n- If no coalition possible → fresh elections called\n\nExample: UPA, NDA are coalition alliances in India.";
-            } else if (m.includes("hello") || m.includes("hi ") || m.includes("hey ") || m.includes("namaste") || m.includes("start") || m.includes("help")) {
-                reply = "Hello! 👋 I'm **VoteWise AI**, your election guide.\n\nI can help you with:\n🗳️ Voter registration & eligibility\n📋 What to bring on polling day\n🔢 How votes are counted\n📚 Election terms explained\n🏛️ ECI, EVM, NOTA, VVPAT\n\nWhat would you like to know?";
-            } else if (m.includes("thank")) {
-                reply = "You're welcome! 😊 Every vote matters — stay informed and encourage others to vote too! 🗳️";
-            }
-
-            addMessage(reply, false);
-            conversationHistory.push({ role: "assistant", content: reply });
-
-            const suggestionsDiv = document.createElement('div');
-            suggestionsDiv.className = 'chat-suggestions message-suggestions';
-            suggestionsDiv.innerHTML = `
-                <button class="chip">How do I register to vote in India?</button>
-                <button class="chip">What happens on polling day?</button>
-                <button class="chip">What is NOTA?</button>
-                <button class="chip">How are votes counted?</button>`;
-            chatMessages.appendChild(suggestionsDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            suggestionsDiv.querySelectorAll('.chip').forEach(chip => {
-                chip.addEventListener('click', (e) => sendMessage(e.target.textContent));
-            });
-        }, 800);
-    }
-
-    sendMsgBtn.addEventListener('click', () => { const msg = chatInput.value.trim(); if (msg) sendMessage(msg); });
-    chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { const msg = chatInput.value.trim(); if (msg) sendMessage(msg); } });
-    document.querySelectorAll('.chip').forEach(chip => { chip.addEventListener('click', (e) => sendMessage(e.target.textContent)); });
+// ─── Constants ────────────────────────────────────────────────────────────────
+const CONFIG = Object.freeze({
+  DEBOUNCE_DELAY:     250,
+  MAX_HISTORY_LENGTH: 20,
+  CACHE_TTL_MS:       5 * 60 * 1000,
+  MODEL:              'claude-sonnet-4-20250514',
+  MAX_TOKENS:         1000,
 });
+
+const SYSTEM_PROMPT = `You are VoteWise AI, a friendly and accurate civic education assistant.
+Help users understand the democratic election process clearly and impartially.
+Specialise in Indian elections (ECI, EVM, NOTA, VVPAT, Form 6/8) but also cover US and UK.
+Keep answers under 200 words, use **bold** for key terms and bullet points for lists.
+Never express political opinions. Focus only on civic education.`;
+
+const BADGE_CLASS = Object.freeze({
+  'Pre-Election':  'badge-warning',
+  'Election Day':  'badge-primary',
+  'Post-Election': 'badge-success',
+});
+
+const DEFAULT_CHIPS = Object.freeze([
+  'How do I register to vote in India?',
+  'What happens on polling day?',
+  'What is NOTA?',
+  'How are votes counted?',
+]);
+
+// ─── Memoization Cache ────────────────────────────────────────────────────────
+const _memoCache = new Map();
+function memoize(fn, keyFn = (...args) => JSON.stringify(args)) {
+  return function (...args) {
+    const key = keyFn(...args);
+    const cached = _memoCache.get(key);
+    if (cached && Date.now() - cached.ts < CONFIG.CACHE_TTL_MS) return cached.value;
+    const value = fn.apply(this, args);
+    _memoCache.set(key, { value, ts: Date.now() });
+    return value;
+  };
+}
+
+// ─── Utilities ────────────────────────────────────────────────────────────────
+function debounce(fn, delay = CONFIG.DEBOUNCE_DELAY) {
+  let timer;
+  return function (...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
+function throttle(fn, limit = 100) {
+  let lastCall = 0;
+  return function (...args) {
+    const now = Date.now();
+    if (now - lastCall >= limit) { lastCall = now; fn.apply(this, args); }
+  };
+}
+
+const qs  = (sel, root = document) => root.querySelector(sel);
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
+
+function createElement(tag, attrs = {}, html = '') {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+  if (html) el.innerHTML = html;
+  return el;
+}
+
+function batchWrite(fn) { return requestAnimationFrame(fn); }
+
+function sanitizeText(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
+}
+
+function renderMarkdown(text) {
+  return sanitizeText(text)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/^- (.+)/gm, '<li>$1</li>')
+    .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
+    .replace(/\n\n/g, '<br><br>')
+    .replace(/\n/g, '<br>');
+}
+
+// ─── Service Worker ───────────────────────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' })
+      .then(reg => {
+        console.log('[SW] Registered, scope:', reg.scope);
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+              console.log('[SW] Update available.');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('[SW] Registration failed:', err));
+  });
+}
+
+// ─── Web Worker for Search ────────────────────────────────────────────────────
+let searchWorker = null;
+const workerCallbacks = new Map();
+
+function initSearchWorker() {
+  if (!window.Worker) return;
+  try {
+    searchWorker = new Worker('/search.worker.js');
+    searchWorker.addEventListener('message', (e) => {
+      const cb = workerCallbacks.get(e.data.type);
+      if (cb) { cb(e.data); workerCallbacks.delete(e.data.type); }
+    });
+    searchWorker.addEventListener('error', () => { searchWorker = null; });
+    searchWorker.postMessage({ type: 'BUILD_SEARCH_INDEX', payload: { faqData, glossaryData } });
+  } catch (e) { searchWorker = null; }
+}
+
+function workerSearch(type, payload) {
+  return new Promise((resolve) => {
+    if (!searchWorker) {
+      const term = payload.term.toLowerCase();
+      if (type === 'FILTER_FAQ') {
+        resolve({ results: payload.data.filter(f =>
+          f.question.toLowerCase().includes(term) || f.answer.toLowerCase().includes(term)) });
+      } else {
+        resolve({ results: payload.data.filter(g =>
+          g.term.toLowerCase().includes(term) || g.definition.toLowerCase().includes(term)) });
+      }
+      return;
+    }
+    const resultType = type === 'FILTER_FAQ' ? 'FAQ_RESULTS' : 'GLOSSARY_RESULTS';
+    workerCallbacks.set(resultType, resolve);
+    searchWorker.postMessage({ type, payload });
+  });
+}
+
+// ─── Lazy Section Observer ────────────────────────────────────────────────────
+const lazyLoadObserver = new IntersectionObserver(
+  (entries) => entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.dispatchEvent(new CustomEvent('sectionVisible'));
+      lazyLoadObserver.unobserve(e.target);
+    }
+  }),
+  { rootMargin: '200px 0px' }
+);
+
+function isInViewport(el) {
+  const r = el.getBoundingClientRect();
+  return r.top < window.innerHeight && r.bottom > 0;
+}
+
+// ─── DOMContentLoaded ─────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  performance.mark('votewise-dom-ready');
+  initSearchWorker();
+
+  // ── Fade-up scroll animation ─────────────────────────────────────────────
+  const fadeObserver = new IntersectionObserver(
+    (entries) => {
+      const hits = entries.filter(e => e.isIntersecting).map(e => e.target);
+      if (!hits.length) return;
+      batchWrite(() => hits.forEach(el => { el.classList.add('visible'); fadeObserver.unobserve(el); }));
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+  );
+  qsa('.fade-up').forEach(el => fadeObserver.observe(el));
+
+  // ── Country Map (O(1) lookup) ────────────────────────────────────────────
+  const countryMap = new Map(Object.entries(electionData));
+
+  // ── Timeline ─────────────────────────────────────────────────────────────
+  const timelineContainer = qs('#timeline');
+  const timelineHeader    = qs('#timeline-header');
+  const timelineBtns      = qsa('.timeline-btn');
+  const heroPills         = qsa('.country-selector .pill');
+
+  const buildTimelineFragment = memoize((countryKey) => {
+    const data = countryMap.get(countryKey);
+    if (!data) return null;
+    const fragment = document.createDocumentFragment();
+    data.steps.forEach(step => {
+      const badgeClass = BADGE_CLASS[step.phase] || 'badge-success';
+      const stepEl = createElement('div', { class: 'timeline-step', role: 'listitem' });
+      stepEl.innerHTML = `
+        <div class="timeline-marker" aria-hidden="true">${step.id}</div>
+        <div class="timeline-content">
+          <div class="timeline-content-header" role="button" tabindex="0"
+               aria-expanded="false" aria-controls="step-details-${step.id}"
+               aria-label="Step ${step.id}: ${sanitizeText(step.title)}">
+            <h4>${step.icon} ${sanitizeText(step.title)}</h4>
+            <span class="badge ${badgeClass}">${sanitizeText(step.phase)}</span>
+          </div>
+          <p class="timeline-duration">
+            <i data-lucide="clock" class="icon-sm" aria-hidden="true"></i>
+            <span class="sr-only">Duration:</span> ${sanitizeText(step.duration)}
+          </p>
+          <div class="timeline-details" id="step-details-${step.id}" hidden>
+            <div class="detail-box citizen">
+              <strong><i data-lucide="user" class="icon-sm" aria-hidden="true"></i> Citizen:</strong>
+              <p>${sanitizeText(step.citizen)}</p>
+            </div>
+            <div class="detail-box official">
+              <strong><i data-lucide="building-2" class="icon-sm" aria-hidden="true"></i> Official:</strong>
+              <p>${sanitizeText(step.official)}</p>
+            </div>
+          </div>
+        </div>`;
+      const header = qs('.timeline-content-header', stepEl);
+      function toggleStep() {
+        const isExpanded = header.getAttribute('aria-expanded') === 'true';
+        const details = qs('.timeline-details', stepEl);
+        batchWrite(() => {
+          header.setAttribute('aria-expanded', String(!isExpanded));
+          details.hidden = isExpanded;
+          details.classList.toggle('expanded', !isExpanded);
+        });
+      }
+      header.addEventListener('click', toggleStep);
+      header.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleStep(); }
+      });
+      fragment.appendChild(stepEl);
+    });
+    return { fragment, data };
+  }, (k) => `tl-${k}`);
+
+  function switchCountry(countryKey) {
+    const result = buildTimelineFragment(countryKey);
+    if (!result) return;
+    batchWrite(() => {
+      timelineHeader.innerHTML = `<h3><i data-lucide="building" class="icon-sm" aria-hidden="true"></i> Official Body: ${sanitizeText(result.data.body)}</h3>`;
+      timelineContainer.setAttribute('role', 'list');
+      timelineContainer.innerHTML = '';
+      timelineContainer.appendChild(result.fragment.cloneNode(true));
+      lucide.createIcons();
+      timelineBtns.forEach(btn => {
+        const a = btn.dataset.country === countryKey;
+        btn.classList.toggle('active', a);
+        btn.setAttribute('aria-pressed', String(a));
+      });
+      heroPills.forEach(pill => {
+        const a = pill.dataset.country === countryKey;
+        pill.classList.toggle('active', a);
+        pill.setAttribute('aria-pressed', String(a));
+      });
+    });
+  }
+
+  timelineBtns.forEach(btn => btn.addEventListener('click', (e) => switchCountry(e.currentTarget.dataset.country)));
+  heroPills.forEach(pill => {
+    pill.addEventListener('click', (e) => switchCountry(e.currentTarget.dataset.country));
+    pill.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchCountry(e.currentTarget.dataset.country); }
+    });
+  });
+
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => switchCountry('india'), { timeout: 500 });
+  } else {
+    switchCountry('india');
+  }
+
+  // ── FAQ ───────────────────────────────────────────────────────────────────
+  const faqContainer = qs('#faq-container');
+  const faqSearch    = qs('#faq-search');
+
+  function buildFAQFragment(filtered) {
+    const fragment = document.createDocumentFragment();
+    if (!filtered.length) {
+      fragment.appendChild(createElement('p', { class: 'no-results', role: 'status' }, 'No questions found.'));
+      return fragment;
+    }
+    filtered.forEach((faq, i) => {
+      const id = `faq-answer-${i}`;
+      const item = createElement('div', { class: 'faq-item', itemscope: '', itemtype: 'https://schema.org/Question' });
+      item.innerHTML = `
+        <div class="faq-question" role="button" tabindex="0" aria-expanded="false" aria-controls="${id}">
+          <h3 itemprop="name">${sanitizeText(faq.question)}</h3>
+          <i data-lucide="chevron-down" class="faq-icon" aria-hidden="true"></i>
+        </div>
+        <div class="faq-answer" id="${id}" role="region" hidden
+             itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">${sanitizeText(faq.answer)}</p>
+        </div>`;
+      const qEl = qs('.faq-question', item);
+      function toggleFaq() {
+        const aEl = qs('.faq-answer', item);
+        const open = qEl.getAttribute('aria-expanded') === 'true';
+        qsa('.faq-question[aria-expanded="true"]').forEach(q => {
+          if (q === qEl) return;
+          q.setAttribute('aria-expanded', 'false');
+          q.closest('.faq-item').classList.remove('active');
+          const a = q.closest('.faq-item').querySelector('.faq-answer');
+          if (a) { a.style.maxHeight = null; a.hidden = true; }
+        });
+        batchWrite(() => {
+          qEl.setAttribute('aria-expanded', String(!open));
+          item.classList.toggle('active', !open);
+          if (!open) { aEl.hidden = false; requestAnimationFrame(() => { aEl.style.maxHeight = aEl.scrollHeight + 'px'; }); }
+          else { aEl.style.maxHeight = null; setTimeout(() => { aEl.hidden = true; }, 300); }
+        });
+      }
+      qEl.addEventListener('click', toggleFaq);
+      qEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleFaq(); } });
+      fragment.appendChild(item);
+    });
+    return fragment;
+  }
+
+  const renderFAQs = debounce(async (term = '') => {
+    performance.mark('faq-start');
+    const { results } = await workerSearch('FILTER_FAQ', { data: faqData, term });
+    performance.mark('faq-end');
+    performance.measure('faq-filter', 'faq-start', 'faq-end');
+    batchWrite(() => {
+      faqContainer.innerHTML = '';
+      faqContainer.appendChild(buildFAQFragment(results));
+      lucide.createIcons();
+      let s = qs('#faq-status');
+      if (!s) { s = createElement('p', { id: 'faq-status', class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' }); faqContainer.before(s); }
+      s.textContent = `${results.length} question${results.length !== 1 ? 's' : ''} found.`;
+    });
+  });
+
+  faqSearch.addEventListener('input', (e) => renderFAQs(e.target.value), { passive: true });
+  renderFAQs('');
+
+  // ── Glossary ──────────────────────────────────────────────────────────────
+  const glossaryContainer = qs('#glossary-container');
+  const glossarySearch    = qs('#glossary-search');
+
+  const renderGlossary = debounce(async (term = '') => {
+    const { results } = await workerSearch('FILTER_GLOSSARY', { data: glossaryData, term });
+    const fragment = document.createDocumentFragment();
+    if (!results.length) {
+      fragment.appendChild(createElement('p', { class: 'no-results', role: 'status' }, 'No terms found.'));
+    } else {
+      results.forEach(item => {
+        const card = createElement('div', { class: 'card glossary-card', itemscope: '', itemtype: 'https://schema.org/DefinedTerm' });
+        card.innerHTML = `<h3 itemprop="name">${sanitizeText(item.term)}</h3><p itemprop="description">${sanitizeText(item.definition)}</p>`;
+        fragment.appendChild(card);
+      });
+    }
+    batchWrite(() => {
+      glossaryContainer.innerHTML = '';
+      glossaryContainer.appendChild(fragment);
+      let s = qs('#glossary-status');
+      if (!s) { s = createElement('p', { id: 'glossary-status', class: 'sr-only', 'aria-live': 'polite', 'aria-atomic': 'true' }); glossaryContainer.before(s); }
+      s.textContent = `${results.length} term${results.length !== 1 ? 's' : ''} found.`;
+    });
+  });
+
+  glossarySearch.addEventListener('input', (e) => renderGlossary(e.target.value), { passive: true });
+  renderGlossary('');
+
+  // ── Google Charts ─────────────────────────────────────────────────────────
+  const statsSection = qs('#election-stats');
+  function drawCharts() {
+    const timelineEl = qs('#timeline-chart');
+    if (timelineEl && typeof google !== 'undefined') {
+      const data = google.visualization.arrayToDataTable([
+        ['Country', 'Pre-Election Days', 'Campaign Days'],
+        ['India',   60, 14],
+        ['USA',     180, 60],
+        ['UK',      25, 21],
+      ]);
+      new google.visualization.BarChart(timelineEl).draw(data, {
+        title: 'Election Timeline Comparison (Days)',
+        titleTextStyle: { color: '#1a3a6b', fontName: 'DM Sans', fontSize: 15, bold: true },
+        colors: ['#1a3a6b', '#d4a017'],
+        backgroundColor: 'transparent',
+        legend: { position: 'bottom' },
+        chartArea: { width: '80%', height: '65%' },
+      });
+    }
+    const turnoutEl = qs('#turnout-chart');
+    if (turnoutEl && typeof google !== 'undefined') {
+      const data = google.visualization.arrayToDataTable([
+        ['Country', 'Voter Turnout %'],
+        ['India 2024',  66.3],
+        ['USA 2020',    62.8],
+        ['UK 2019',     67.3],
+        ['Non-voters',   3.6],
+      ]);
+      new google.visualization.PieChart(turnoutEl).draw(data, {
+        title: 'Average Voter Turnout',
+        titleTextStyle: { color: '#1a3a6b', fontName: 'DM Sans', fontSize: 15, bold: true },
+        colors: ['#1a3a6b', '#2d7a4f', '#d4a017', '#e5e7eb'],
+        backgroundColor: 'transparent',
+        pieHole: 0.45,
+        chartArea: { width: '90%', height: '75%' },
+      });
+    }
+  }
+
+  if (statsSection) {
+    const loadAndDraw = () => {
+      if (typeof google !== 'undefined' && google.charts) {
+        google.charts.load('current', { packages: ['corechart', 'bar'] });
+        google.charts.setOnLoadCallback(drawCharts);
+      }
+    };
+    if (isInViewport(statsSection)) { loadAndDraw(); }
+    else {
+      lazyLoadObserver.observe(statsSection);
+      statsSection.addEventListener('sectionVisible', loadAndDraw, { once: true });
+    }
+  }
+  window.addEventListener('resize', throttle(drawCharts, 300), { passive: true });
+
+  // ── AI Chat ───────────────────────────────────────────────────────────────
+  let conversationHistory = [];
+  let activeController   = null;
+
+  const chatMessages    = qs('#chat-messages');
+  const chatInput       = qs('#chat-input');
+  const sendMsgBtn      = qs('#send-msg-btn');
+  const chatSuggestions = qs('#chat-suggestions');
+
+  qs('#clear-chat-btn').addEventListener('click', () => {
+    activeController?.abort();
+    activeController = null;
+    batchWrite(() => {
+      chatMessages.innerHTML = '<div class="message ai" role="status">Hello! I\'m VoteWise AI. How can I help you understand the election process today?</div>';
+      conversationHistory = [];
+      chatSuggestions.style.display = 'flex';
+    });
+  });
+
+  function addMessage(text, isUser = false) {
+    const div = createElement('div', { class: `message ${isUser ? 'user' : 'ai'}`, role: isUser ? 'none' : 'status' });
+    isUser ? (div.textContent = text) : (div.innerHTML = renderMarkdown(text));
+    chatMessages.appendChild(div);
+    requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
+  }
+
+  function showTyping() {
+    const el = createElement('div', { id: 'typing-indicator', class: 'message ai typing', role: 'status', 'aria-label': 'VoteWise AI is thinking' },
+      '<div class="dot"></div><div class="dot"></div><div class="dot"></div>');
+    chatMessages.appendChild(el);
+    requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
+  }
+  function hideTyping() { qs('#typing-indicator')?.remove(); }
+
+  function addChips() {
+    const div = createElement('div', { class: 'chat-suggestions message-suggestions', role: 'group', 'aria-label': 'Suggested questions' });
+    DEFAULT_CHIPS.forEach(text => {
+      const btn = createElement('button', { class: 'chip', type: 'button' }, sanitizeText(text));
+      btn.addEventListener('click', () => sendMessage(text));
+      div.appendChild(btn);
+    });
+    chatMessages.appendChild(div);
+    requestAnimationFrame(() => { chatMessages.scrollTop = chatMessages.scrollHeight; });
+  }
+
+  function setSending(on) {
+    sendMsgBtn.disabled = on;
+    chatInput.disabled  = on;
+    sendMsgBtn.setAttribute('aria-busy', String(on));
+  }
+
+  async function sendMessage(userMsg) {
+    const msg = userMsg.trim();
+    if (!msg) return;
+    activeController?.abort();
+    activeController = new AbortController();
+
+    addMessage(msg, true);
+    chatInput.value = '';
+    chatSuggestions.style.display = 'none';
+
+    if (conversationHistory.length > CONFIG.MAX_HISTORY_LENGTH) {
+      conversationHistory = conversationHistory.slice(-CONFIG.MAX_HISTORY_LENGTH);
+    }
+    conversationHistory.push({ role: 'user', content: msg });
+    setSending(true);
+    showTyping();
+    performance.mark('chat-start');
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: activeController.signal,
+        body: JSON.stringify({ model: CONFIG.MODEL, max_tokens: CONFIG.MAX_TOKENS, system: SYSTEM_PROMPT, messages: conversationHistory }),
+      });
+      performance.mark('chat-end');
+      performance.measure('chat-latency', 'chat-start', 'chat-end');
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error?.message || `HTTP ${res.status}`); }
+      const data  = await res.json();
+      const reply = data.content?.[0]?.text || 'Sorry, I could not get a response.';
+      hideTyping();
+      addMessage(reply, false);
+      conversationHistory.push({ role: 'assistant', content: reply });
+      addChips();
+    } catch (err) {
+      if (err.name === 'AbortError') return;
+      console.error('[VoteWise AI]', err);
+      hideTyping();
+      addMessage('⚠️ Could not connect right now.\n\n**Quick answers:**\n- **NOTA** = None Of The Above (last EVM button)\n- **Register**: voters.eci.gov.in → Form 6\n- **Helpline**: 1950', false);
+    } finally {
+      setSending(false);
+      activeController = null;
+      requestAnimationFrame(() => chatInput.focus());
+    }
+  }
+
+  sendMsgBtn.addEventListener('click', () => sendMessage(chatInput.value));
+  chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(chatInput.value); } }, { passive: false });
+  qsa('.chip').forEach(chip => chip.addEventListener('click', (e) => sendMessage(e.currentTarget.textContent.trim())));
+
+  // ── Performance Summary ───────────────────────────────────────────────────
+  performance.mark('votewise-init-end');
+  performance.measure('votewise-total-init', 'votewise-init-start', 'votewise-init-end');
+
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      const [m] = performance.getEntriesByName('votewise-total-init');
+      console.log(`[VoteWise] Init in ${m?.duration?.toFixed(2) ?? '?'}ms`);
+      window.voteWisePerf = {
+        initDuration: m?.duration,
+        marks:   performance.getEntriesByType('mark').map(m => ({ name: m.name, time: m.startTime.toFixed(2) })),
+        measures: performance.getEntriesByType('measure').map(m => ({ name: m.name, duration: m.duration.toFixed(2) })),
+      };
+    });
+  }
+
+}); // end DOMContentLoaded
